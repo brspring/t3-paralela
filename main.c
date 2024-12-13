@@ -180,19 +180,18 @@ void insereLocalOutput(localOutput_t *localOutput, long long num, int np) {
 //     MPI_Barrier(MPI_COMM_WORLD);
 
 // }
-void multi_partition(long long *Input, int n, long long *P, int np, long long *Output, int *nO) {
+void multi_partition(long long *Input, int nLocal, long long *P, int np, long long *Output, int *nO) {
     int processId, nProcesses;
     MPI_Comm_rank(MPI_COMM_WORLD, &processId);
     MPI_Comm_size(MPI_COMM_WORLD, &nProcesses);
 
     // 1. Inicialização local de `localOutputs`
-    int nLocal = n / nProcesses; // Número de elementos por processo
 
-    localOutput_t *localOutputs = malloc(sizeof(localOutput_t) * np);
+    localOutput_t *localOutputs = calloc(np, sizeof(localOutput_t));
     for (int i = 0; i < np; i++) {
         localOutputs[i].size = 0;
         localOutputs[i].maxSize = nLocal;
-        localOutputs[i].array = malloc(sizeof(long long) * nLocal);
+        localOutputs[i].array = calloc(nLocal, sizeof(long long));
     }
 
     // 2. Particionamento local
@@ -204,7 +203,7 @@ void multi_partition(long long *Input, int n, long long *P, int np, long long *O
     }
 
     // Preparar dados para MPI_Alltoallv
-    long long *sendBuffer = malloc(sizeof(long long) * nLocal);
+    long long *sendBuffer = calloc(nLocal, sizeof(localOutput_t));
     int *sendDispls = malloc(sizeof(int) * np); // Deslocamentos
     int offset = 0;
     for (int i = 0; i < np; i++) {
@@ -228,6 +227,12 @@ void multi_partition(long long *Input, int n, long long *P, int np, long long *O
     long long *recvBuffer = malloc(sizeof(long long) * totalRecv);
 
     MPI_Alltoallv(sendBuffer, sendCounts, sendDispls, MPI_LONG_LONG, recvBuffer, recvCounts, recvDispls, MPI_LONG_LONG, MPI_COMM_WORLD);
+    // Verificar conteúdo antes de copiar para Output
+    printf("Process %d - Dados recebidos antes de copiar para Output: ", processId);
+    for (int i = 0; i < totalRecv; i++) {
+        printf("%lld ", recvBuffer[i]);
+    }
+    printf("\n");
 
     // 4. Concatenar os dados recebidos no vetor Output
     memcpy(Output, recvBuffer, sizeof(long long) * totalRecv);
@@ -309,8 +314,13 @@ int main(int argc, char *argv[]) {
     //somaAcumulativa(Pos, np);
 
     chrono_stop(&time);
+    
+    for (int i = 0; i < nTotalElements; i++) {
+        printf("%lld ", Output[i]);
+    }
 
     verifica_particoes2(Input, nLocal, P, np, Output, &nO);
+    
     //verifica_particoes(Input, nTotalElements, P, np, Output, Pos);
     double total_time_in_nanoseconds = (double) chrono_gettotal(&time);
     double total_time_in_seconds = total_time_in_nanoseconds / (1000 * 1000 * 1000);
