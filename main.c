@@ -10,7 +10,7 @@
 #define RAND_MAX_CUSTOM 10
 #define MAX_THREADS 8
 #define BATCH_SIZE 10
-#define NTIMES 1
+#define NTIMES 10
 
 typedef struct {
     int size;
@@ -252,24 +252,19 @@ void multi_partition(long long *Input, int n, long long *P, int np, long long *O
 int main(int argc, char *argv[]) {
     // Recebe o número de threads pelo argv
     // srand(time(NULL));
-    if (argc != 2) {
+    if (argc < 2 || argc > 4) {
         printf("Uso: %s <n> <np>\n", argv[0]);
         return 1;
     }
     // agora o vetor comeca vazio e dentro de cada processo ele é gerado
     // long long *P = geraVetor(np, 1);
     // int *Pos = geraVetorPos(np);
-
+    int processId, nO, np;
     MPI_Init(&argc, &argv);
     MPI_Comm_size(MPI_COMM_WORLD, &np);
     MPI_Comm_rank(MPI_COMM_WORLD, &processId);
-
     
     int nTotalElements = atoi(argv[1]);
-    int np = atoi(argv[2]);
-
-    // nO é o número de elementos no vetor de saída
-    int processId, nO;
 
     int nLocal = nTotalElements / np;
 
@@ -300,7 +295,7 @@ int main(int argc, char *argv[]) {
     }
 
     // MPI manda por broadcast o vetor P para todos os processos
-    MPI_Bcast(partitionArr, np, MPI_LONG_LONG, 0, MPI_COMM_WORLD);
+    MPI_Bcast(P, np, MPI_LONG_LONG, 0, MPI_COMM_WORLD);
 
     chronometer_t time;
     chrono_reset(&time);
@@ -329,4 +324,6 @@ int main(int argc, char *argv[]) {
     free(Input);
     free(Output);
     free(P);
+
+    MPI_Finalize();
 }

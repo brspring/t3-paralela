@@ -1,5 +1,5 @@
 # Variáveis de compilador e flags
-CC = gcc
+CC = mpicc
 CFLAGS = -Wall -O2
 
 # Nome do executável
