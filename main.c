@@ -265,16 +265,16 @@ int main(int argc, char *argv[]) {
     // long long *P = geraVetor(np, 1);
     // int *Pos = geraVetorPos(np);
     int processId, nO, np;
+    int nTotalElements = atoi(argv[1]);
+
+    long long *Input = malloc(sizeof(long long) * nTotalElements);
+    long long *Output = malloc(sizeof(long long) * nTotalElements);
+
     MPI_Init(&argc, &argv);
     MPI_Comm_size(MPI_COMM_WORLD, &np);
     MPI_Comm_rank(MPI_COMM_WORLD, &processId);
-    
-    int nTotalElements = atoi(argv[1]);
 
     int nLocal = nTotalElements / np;
-
-    long long *Input = malloc(sizeof(long long) * nTotalElements);
-    long long *Output = malloc(sizeof(long long) * np * nLocal);
 
     srand(2024 * 100 + processId);
 
